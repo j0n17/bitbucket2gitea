@@ -3,8 +3,7 @@
 ## Usage
 Create a .env file with the following information:
 - GITEA_URL
-- GITEA_USERNAME
-- GITEA_PASSWORD
+- GITEA_TOKEN
 - GITEA_ORGNAME_OR_USERNAME
 - BITBUCKET_ORGNAME
 - BITBUCKET_USERNAME

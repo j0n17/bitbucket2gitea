@@ -49,8 +49,7 @@ def get_bitbucket_repositories(owner: str, username: str, password: str) -> List
 
 def migrate_repository(
     url,
-    username,
-    password,
+    token,
     orgname_or_username,
     bitbucket_username,
     bitbucket_password,
@@ -76,7 +75,7 @@ def migrate_repository(
             "description": repository["description"],
             "repo_name": repository["name"],
         },
-        auth=(username, password),
+        headers={"Authorization": f"token {token}"},
         timeout=120,
     )
 
@@ -96,8 +95,7 @@ def main():
     bitbucket_password = os.getenv("BITBUCKET_PASSWORD")
 
     gitea_url = os.getenv("GITEA_URL").rstrip("/")
-    gitea_username = os.getenv("GITEA_USERNAME")
-    gitea_password = os.getenv("GITEA_PASSWORD")
+    gitea_token = os.getenv("GITEA_TOKEN")
     gitea_orgname_or_username = os.getenv("GITEA_ORGNAME_OR_USERNAME")
 
     repositories = get_bitbucket_repositories(
@@ -107,8 +105,7 @@ def main():
     for repository in repositories:
         migrate_repository(
             gitea_url,
-            gitea_username,
-            gitea_password,
+            gitea_token,
             gitea_orgname_or_username,
             bitbucket_username,
             bitbucket_password,
