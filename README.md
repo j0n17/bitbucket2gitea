@@ -1,6 +1,6 @@
 # Bitbucket 2 Gitea
 
-## Usage
+## Usage
 Create a .env file with the following information:
 - GITEA_URL
 - GITEA_USERNAME
