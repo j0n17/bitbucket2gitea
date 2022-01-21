@@ -13,6 +13,9 @@ logging.basicConfig(
 
 
 def get_bitbucket_repositories(owner: str, username: str, password: str) -> List:
+    """
+    Fetches the list of repositories from Bitbucket API
+    """
     repositories = []
 
     page = 1
@@ -55,26 +58,33 @@ def migrate_repository(
     bitbucket_password,
     repository,
 ):
-    print(f"{url}/api/v1/repos/migrate")
+    """
+    Send the migration payload to GitTea
+    """
+
+    payload = {
+        "clone_addr": repository["url"].replace(
+            "https://bitbucket.org",
+            f"https://{bitbucket_username}:{bitbucket_password}@bitbucket.org",
+        ),
+        "repo_owner": orgname_or_username,
+        "description": repository["description"],
+        "repo_name": repository["name"],
+
+        "mirror": (os.getenv("GITEA_MIGRATE_CONFIG_MIRROR", 'False') == 'True'),
+        "private": (os.getenv("GITEA_MIGRATE_CONFIG_PRIVATE", 'False') == 'True'),
+        "issues": (os.getenv("GITEA_MIGRATE_CONFIG_ISSUES", 'False') == 'True'),
+        "labels": (os.getenv("GITEA_MIGRATE_CONFIG_LABELS", 'False') == 'True'),
+        "milestones": (os.getenv("GITEA_MIGRATE_CONFIG_MILESTONES", 'False') == 'True'),
+        "pull_requests": (os.getenv("GITEA_MIGRATE_CONFIG_PULL_REQUESTS", 'False') == 'True'),
+        "releases": (os.getenv("GITEA_MIGRATE_CONFIG_RELEASES", 'False') == 'True'),
+        "wiki": (os.getenv("GITEA_MIGRATE_CONFIG_WIKI", 'False') == 'True'),
+    }
+
+    logging.info(f'Migrating {repository["name"]} to {url}')
     res = requests.post(
         f"{url}/api/v1/repos/migrate",
-        json={
-            "clone_addr": repository["url"].replace(
-                "https://bitbucket.org",
-                f"https://{bitbucket_username}:{bitbucket_password}@bitbucket.org",
-            ),
-            "mirror": True,
-            "private": True,
-            "issues": True,
-            "labels": True,
-            "milestones": True,
-            "pull_requests": True,
-            "repo_owner": orgname_or_username,
-            "releases": True,
-            "wiki": True,
-            "description": repository["description"],
-            "repo_name": repository["name"],
-        },
+        json=payload,
         headers={"Authorization": f"token {token}"},
         timeout=120,
     )
@@ -86,9 +96,34 @@ def migrate_repository(
             f'Failed to create {repository["name"]}, got status code {res.status_code} and error :\n{res.text}'
         )
 
+def validate_environment():
+    """
+    Validates the required environment variables, raises an exception if some of them are missing
+    """
+
+    missing_values = []
+
+    required_keys = [
+        "BITBUCKET_ORGNAME",
+        "BITBUCKET_USERNAME",
+        "BITBUCKET_PASSWORD",
+        "GITEA_URL",
+        "GITEA_TOKEN",
+        "GITEA_ORGNAME_OR_USERNAME",
+    ]
+
+    for key in required_keys:
+        if key not in os.environ:
+            missing_values.append(key)
+
+    if len(missing_values):
+        raise Exception(f"The following keys are missing from the environment variables : {', '.join(missing_values)}")
+
 
 def main():
     load_dotenv()
+
+    validate_environment()
 
     bitbucket_orgname = os.getenv("BITBUCKET_ORGNAME")
     bitbucket_username = os.getenv("BITBUCKET_USERNAME")
